@@ -1,0 +1,177 @@
+# UmaSimCraft 프로젝트 컨텍스트
+
+## 프로젝트 개요
+**UmaSimCraft**는 우마무스메 프리티 더비의 육성 시뮬레이션을 위한 오프라인 웹 애플리케이션입니다.
+
+## 기술 스택
+- **Backend**: Python 3.13, Django 5.2.4 LTS, Django REST Framework, Django Channels 4
+- **Database**: MariaDB 11, Redis 7
+- **Frontend**: Tailwind CSS 3, daisyUI, PWA
+- **DevOps**: Docker, GitHub Actions, pytest
+
+## 자동 적용 규칙
+
+### 1. 코드 생성 시 자동 적용
+- 모든 Python 파일에 타입 힌트 추가
+- Django 모델에 적절한 Meta 클래스 설정
+- ViewSet 패턴 사용
+- NumPy 스타일 docstring 작성
+
+### 2. 파일 타입별 자동 적용
+- **Python 파일**: Black 포맷팅, Ruff 린팅 규칙
+- **Django 템플릿**: Tailwind CSS 클래스 순서, daisyUI 컴포넌트
+- **JavaScript**: ES6+ 문법, 모듈화 패턴
+- **CSS**: Tailwind 레이어 구조
+
+### 3. 컨텍스트 인식
+- 현재 작업 중인 파일 타입에 따라 관련 규칙 자동 적용
+- 프로젝트 구조에 맞는 파일 경로 제안
+- 기존 코드 패턴과 일관성 유지
+
+## 개발 워크플로우
+
+### 1. 새 기능 개발
+```python
+# 자동으로 적용되는 패턴
+from typing import Dict, List, Optional
+from django.db import models
+from rest_framework import viewsets
+
+class ExampleModel(models.Model):
+    """예시 모델 - 자동으로 docstring 추가"""
+    
+    name = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'example_table'
+        verbose_name = '예시'
+        verbose_name_plural = '예시들'
+    
+    def __str__(self) -> str:
+        return self.name
+```
+
+### 2. API 개발
+```python
+# 자동으로 적용되는 ViewSet 패턴
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+class ExampleViewSet(viewsets.ReadOnlyModelViewSet):
+    """예시 ViewSet - 자동으로 docstring 추가"""
+    
+    queryset = ExampleModel.objects.all()
+    serializer_class = ExampleSerializer
+    
+    @action(detail=True, methods=['post'])
+    def custom_action(self, request, pk=None):
+        """커스텀 액션"""
+        instance = self.get_object()
+        # 로직 구현
+        return Response({'status': 'success'})
+```
+
+### 3. 프론트엔드 개발
+```html
+<!-- 자동으로 적용되는 Tailwind 패턴 -->
+<div class="
+  flex items-center justify-between
+  p-4 m-2
+  w-full h-12
+  text-lg font-semibold
+  bg-white rounded-lg shadow-md
+  hover:bg-gray-50 focus:ring-2
+">
+  <!-- 컨텐츠 -->
+</div>
+```
+
+## 품질 보증
+
+### 1. 자동 검사
+- 코드 포맷팅 일관성
+- 타입 힌트 완성도
+- 테스트 커버리지
+- 보안 취약점
+
+### 2. 성능 최적화
+- 데이터베이스 쿼리 최적화
+- 캐싱 전략 적용
+- 정적 파일 최적화
+- 번들 크기 최소화
+
+### 3. 보안 강화
+- 입력 검증 자동 추가
+- SQL 인젝션 방지
+- XSS 방지
+- CSRF 보호
+
+## 컨텍스트 인식 기능
+
+### 1. 파일 타입별 규칙
+- **models.py**: Django 모델 규칙 자동 적용
+- **views.py**: ViewSet 패턴 자동 적용
+- **urls.py**: URL 패턴 규칙 자동 적용
+- **tests.py**: 테스트 패턴 자동 적용
+
+### 2. 프로젝트 구조 인식
+- apps/ 디렉토리 구조 준수
+- 설정 파일 분리 패턴
+- 정적 파일 구조
+- 템플릿 구조
+
+### 3. 의존성 관리
+- requirements.txt 업데이트
+- 패키지 버전 호환성
+- 보안 업데이트 알림
+- 의존성 충돌 해결
+
+## 자동화된 개발 지원
+
+### 1. 코드 생성
+- 모델 클래스 자동 생성
+- ViewSet 자동 생성
+- Serializer 자동 생성
+- 테스트 코드 자동 생성
+
+### 2. 리팩토링 지원
+- 코드 중복 제거
+- 성능 최적화 제안
+- 보안 강화 제안
+- 구조 개선 제안
+
+### 3. 문서화 자동화
+- API 문서 자동 생성
+- README 업데이트
+- CHANGELOG 관리
+- 주석 자동 추가
+
+## 개발 가이드라인
+
+### 1. 코드 작성 시
+- 항상 타입 힌트 포함
+- 적절한 docstring 작성
+- 에러 처리 포함
+- 로깅 추가
+
+### 2. 테스트 작성 시
+- 단위 테스트 필수
+- 통합 테스트 포함
+- 성능 테스트 고려
+- 보안 테스트 포함
+
+### 3. 배포 시
+- 환경변수 관리
+- 보안 설정 확인
+- 성능 모니터링
+- 백업 전략 수립
+---
+description: "프로젝트 컨텍스트 및 자동 적용 규칙"
+type: Always
+globs: ["*"]
+alwaysApply: true
+autoApply: true
+priority: 1
+---

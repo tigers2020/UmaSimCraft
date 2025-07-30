@@ -1,0 +1,386 @@
+# 테스트 작성 규칙
+
+## 테스트 구조
+
+### Django 테스트 클래스
+```python
+# tests/test_models.py
+from django.test import TestCase
+from django.core.exceptions import ValidationError
+from apps.simulator.models import Character, SupportCard
+
+class CharacterModelTest(TestCase):
+    """캐릭터 모델 테스트"""
+    
+    def setUp(self):
+        """테스트 데이터 설정"""
+        self.character = Character.objects.create(
+            id=1001,
+            name="테스트 캐릭터",
+            rarity="SSR"
+        )
+    
+    def test_character_creation(self):
+        """캐릭터 생성 테스트"""
+        self.assertEqual(self.character.name, "테스트 캐릭터")
+        self.assertEqual(self.character.rarity, "SSR")
+        self.assertTrue(self.character.id > 0)
+    
+    def test_character_str_representation(self):
+        """문자열 표현 테스트"""
+        expected = "테스트 캐릭터 (SSR)"
+        self.assertEqual(str(self.character), expected)
+    
+    def test_character_validation(self):
+        """캐릭터 유효성 검사 테스트"""
+        with self.assertRaises(ValidationError):
+            Character.objects.create(
+                id=1001,  # 중복 ID
+                name="중복 캐릭터",
+                rarity="SR"
+            )
+```
+
+### DRF API 테스트
+```python
+# tests/test_api.py
+from rest_framework.test import APITestCase
+from rest_framework import status
+from django.urls import reverse
+from apps.simulator.models import Character
+
+class CharacterAPITest(APITestCase):
+    """캐릭터 API 테스트"""
+    
+    def setUp(self):
+        """테스트 데이터 설정"""
+        self.character = Character.objects.create(
+            id=1001,
+            name="API 테스트 캐릭터",
+            rarity="SSR"
+        )
+        self.list_url = reverse('character-list')
+        self.detail_url = reverse('character-detail', args=[self.character.id])
+    
+    def test_get_character_list(self):
+        """캐릭터 목록 조회 테스트"""
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['name'], "API 테스트 캐릭터")
+    
+    def test_get_character_detail(self):
+        """캐릭터 상세 조회 테스트"""
+        response = self.client.get(self.detail_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], "API 테스트 캐릭터")
+    
+    def test_simulate_character(self):
+        """캐릭터 시뮬레이션 테스트"""
+        simulate_url = reverse('character-simulate', args=[self.character.id])
+        data = {
+            'support_cards': [1, 2, 3, 4, 5],
+            'target_stats': {'speed': 1200, 'stamina': 1000}
+        }
+        response = self.client.post(simulate_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('result', response.data)
+```
+
+### Channels WebSocket 테스트
+```python
+# tests/test_websocket.py
+from channels.testing import WebsocketCommunicator
+from channels.routing import URLRouter
+from django.test import TestCase
+from django.urls import re_path
+from apps.realtime.consumers import SimulationConsumer
+from apps.realtime.routing import websocket_urlpatterns
+
+class SimulationWebSocketTest(TestCase):
+    """시뮬레이션 WebSocket 테스트"""
+    
+    async def test_websocket_connection(self):
+        """WebSocket 연결 테스트"""
+        communicator = WebsocketCommunicator(
+            URLRouter(websocket_urlpatterns),
+            "/ws/simulation/test-session/"
+        )
+        connected, _ = await communicator.connect()
+        self.assertTrue(connected)
+        await communicator.disconnect()
+    
+    async def test_simulation_progress_message(self):
+        """시뮬레이션 진행률 메시지 테스트"""
+        communicator = WebsocketCommunicator(
+            URLRouter(websocket_urlpatterns),
+            "/ws/simulation/test-session/"
+        )
+        connected, _ = await communicator.connect()
+        self.assertTrue(connected)
+        
+        # 진행률 메시지 전송
+        await communicator.send_json_to({
+            'type': 'simulation_progress',
+            'progress': 50
+        })
+        
+        # 응답 확인
+        response = await communicator.receive_json_from()
+        self.assertEqual(response['type'], 'simulation_progress')
+        self.assertEqual(response['progress'], 50)
+        
+        await communicator.disconnect()
+```
+
+## 시뮬레이션 엔진 테스트
+
+### 단위 테스트
+```python
+# tests/test_simulator.py
+import pytest
+from unittest.mock import Mock, patch
+from apps.simulator.engine import UmaSimulator
+from apps.simulator.models import Character, SupportCard
+
+class TestUmaSimulator:
+    """시뮬레이션 엔진 테스트"""
+    
+    @pytest.fixture
+    def simulator(self):
+        """시뮬레이터 인스턴스"""
+        return UmaSimulator()
+    
+    @pytest.fixture
+    def mock_character(self):
+        """모의 캐릭터"""
+        character = Mock(spec=Character)
+        character.id = 1001
+        character.name = "테스트 캐릭터"
+        character.base_stats = {'speed': 100, 'stamina': 100}
+        return character
+    
+    @pytest.fixture
+    def mock_support_cards(self):
+        """모의 서포트 카드"""
+        cards = []
+        for i in range(5):
+            card = Mock(spec=SupportCard)
+            card.id = i + 1
+            card.bonus_stats = {'speed': 10 * (i + 1)}
+            cards.append(card)
+        return cards
+    
+    def test_simulator_initialization(self, simulator):
+        """시뮬레이터 초기화 테스트"""
+        assert simulator is not None
+        assert hasattr(simulator, 'run_simulation')
+    
+    def test_calculate_base_stats(self, simulator, mock_character, mock_support_cards):
+        """기본 스탯 계산 테스트"""
+        base_stats = simulator.calculate_base_stats(mock_character, mock_support_cards)
+        assert 'speed' in base_stats
+        assert 'stamina' in base_stats
+        assert base_stats['speed'] > 100  # 서포트 카드 보너스 적용
+    
+    @patch('apps.simulator.engine.random')
+    def test_training_event_probability(self, mock_random, simulator):
+        """훈련 이벤트 확률 테스트"""
+        mock_random.random.return_value = 0.5
+        
+        # 50% 확률로 이벤트 발생
+        event_occurred = simulator.check_training_event(0.5)
+        assert event_occurred is True
+        
+        mock_random.random.return_value = 0.8
+        event_occurred = simulator.check_training_event(0.5)
+        assert event_occurred is False
+    
+    def test_simulation_result_structure(self, simulator, mock_character, mock_support_cards):
+        """시뮬레이션 결과 구조 테스트"""
+        result = simulator.run_simulation(
+            character=mock_character,
+            support_cards=mock_support_cards,
+            target_stats={'speed': 1200},
+            iterations=100
+        )
+        
+        assert 'success_rate' in result
+        assert 'average_stats' in result
+        assert 'best_run' in result
+        assert 'recommendations' in result
+        assert isinstance(result['success_rate'], float)
+        assert 0 <= result['success_rate'] <= 100
+```
+
+## 성능 테스트
+
+### 부하 테스트
+```python
+# tests/test_performance.py
+import time
+from django.test import TestCase
+from django.urls import reverse
+from rest_framework.test import APIClient
+from apps.simulator.models import Character
+
+class PerformanceTest(TestCase):
+    """성능 테스트"""
+    
+    def setUp(self):
+        """테스트 데이터 설정"""
+        self.client = APIClient()
+        
+        # 테스트용 캐릭터 생성
+        for i in range(100):
+            Character.objects.create(
+                id=1000 + i,
+                name=f"성능테스트캐릭터{i}",
+                rarity="SR"
+            )
+    
+    def test_character_list_performance(self):
+        """캐릭터 목록 조회 성능 테스트"""
+        start_time = time.time()
+        
+        response = self.client.get(reverse('character-list'))
+        
+        end_time = time.time()
+        execution_time = end_time - start_time
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertLess(execution_time, 1.0)  # 1초 이내 응답
+        self.assertEqual(len(response.data), 100)
+    
+    def test_simulation_performance(self):
+        """시뮬레이션 성능 테스트"""
+        character = Character.objects.first()
+        simulate_url = reverse('character-simulate', args=[character.id])
+        
+        data = {
+            'support_cards': [1, 2, 3, 4, 5],
+            'target_stats': {'speed': 1200},
+            'iterations': 1000
+        }
+        
+        start_time = time.time()
+        response = self.client.post(simulate_url, data, format='json')
+        end_time = time.time()
+        execution_time = end_time - start_time
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertLess(execution_time, 5.0)  # 5초 이내 응답
+```
+
+## 테스트 커버리지
+
+### pytest 설정
+```python
+# pytest.ini
+[tool:pytest]
+DJANGO_SETTINGS_MODULE = project.settings.test
+python_files = tests.py test_*.py *_tests.py
+addopts = 
+    --cov=apps
+    --cov-report=html
+    --cov-report=term-missing
+    --cov-fail-under=70
+testpaths = tests
+```
+
+### 커버리지 테스트
+```python
+# tests/test_coverage.py
+from django.test import TestCase
+from apps.simulator.engine import UmaSimulator
+
+class CoverageTest(TestCase):
+    """커버리지 테스트"""
+    
+    def test_all_simulator_methods(self):
+        """시뮬레이터 모든 메서드 테스트"""
+        simulator = UmaSimulator()
+        
+        # 모든 public 메서드 호출
+        methods = [
+            'calculate_base_stats',
+            'check_training_event',
+            'apply_training_bonus',
+            'calculate_final_score',
+            'generate_recommendations'
+        ]
+        
+        for method_name in methods:
+            method = getattr(simulator, method_name)
+            self.assertTrue(callable(method), f"{method_name} is not callable")
+```
+
+## 테스트 데이터 관리
+
+### Factory 패턴
+```python
+# tests/factories.py
+import factory
+from factory.django import DjangoModelFactory
+from apps.simulator.models import Character, SupportCard
+
+class CharacterFactory(DjangoModelFactory):
+    """캐릭터 팩토리"""
+    class Meta:
+        model = Character
+    
+    id = factory.Sequence(lambda n: 1000 + n)
+    name = factory.Sequence(lambda n: f"테스트캐릭터{n}")
+    rarity = factory.Iterator(['N', 'R', 'SR', 'SSR'])
+    base_stats = factory.Dict({
+        'speed': factory.Faker('random_int', min=80, max=120),
+        'stamina': factory.Faker('random_int', min=80, max=120),
+        'power': factory.Faker('random_int', min=80, max=120),
+        'guts': factory.Faker('random_int', min=80, max=120),
+        'wisdom': factory.Faker('random_int', min=80, max=120)
+    })
+
+class SupportCardFactory(DjangoModelFactory):
+    """서포트 카드 팩토리"""
+    class Meta:
+        model = SupportCard
+    
+    id = factory.Sequence(lambda n: 2000 + n)
+    name = factory.Sequence(lambda n: f"테스트카드{n}")
+    rarity = factory.Iterator(['N', 'R', 'SR', 'SSR'])
+    bonus_stats = factory.Dict({
+        'speed': factory.Faker('random_int', min=5, max=20),
+        'stamina': factory.Faker('random_int', min=5, max=20)
+    })
+```
+
+### 테스트에서 팩토리 사용
+```python
+# tests/test_with_factories.py
+from django.test import TestCase
+from tests.factories import CharacterFactory, SupportCardFactory
+
+class FactoryTest(TestCase):
+    """팩토리 사용 테스트"""
+    
+    def test_character_factory(self):
+        """캐릭터 팩토리 테스트"""
+        character = CharacterFactory()
+        self.assertIsNotNone(character.id)
+        self.assertIsNotNone(character.name)
+        self.assertIn(character.rarity, ['N', 'R', 'SR', 'SSR'])
+    
+    def test_multiple_characters(self):
+        """다중 캐릭터 생성 테스트"""
+        characters = CharacterFactory.create_batch(5)
+        self.assertEqual(len(characters), 5)
+        
+        # 각각 다른 ID를 가져야 함
+        ids = [c.id for c in characters]
+        self.assertEqual(len(set(ids)), 5)
+---
+description: "테스트 작성 규칙 및 품질 보증 가이드"
+type: Auto Attached
+globs: ["**/tests/**", "**/test_*.py", "**/*_test.py"]
+autoApply: true
+---

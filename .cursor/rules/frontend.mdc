@@ -1,0 +1,538 @@
+# 프론트엔드 개발 규칙
+
+## Atomic Design 패턴 (필수 준수)
+
+### 컴포넌트 계층 구조
+
+```
+components/templates/
+├── atoms/           # 기본 원자 컴포넌트 (재사용 가능한 최소 단위)
+│   ├── badge.html   # 배지, 태그
+│   ├── button.html  # 버튼
+│   ├── input.html   # 입력 필드
+│   ├── icon.html    # 아이콘
+│   └── loader.html  # 로딩 스피너
+├── molecules/       # 분자 컴포넌트 (atoms 조합)
+│   ├── search_bar.html    # 검색바
+│   └── stat_card.html     # 통계 카드
+└── organisms/       # 유기체 컴포넌트 (molecules 조합)
+    ├── navbar.html        # 네비게이션
+    └── footer.html        # 푸터
+```
+
+### Atoms 사용 규칙
+
+```html
+<!-- ❌ 잘못된 방법: 직접 HTML 작성 -->
+<div class="badge badge-primary">SSR</div>
+<button class="btn btn-primary">클릭</button>
+
+<!-- ✅ 올바른 방법: atoms 컴포넌트 사용 -->
+{% include "atoms/badge.html" with text="SSR" variant="badge-primary" %} {%
+include "atoms/button.html" with label="클릭" variant="btn-primary" %}
+```
+
+### Molecules 사용 규칙
+
+```html
+<!-- ❌ 잘못된 방법: atoms를 직접 조합 -->
+<div class="join">
+  <input class="join-item input input-bordered" placeholder="검색..." />
+  <button class="join-item btn btn-primary">검색</button>
+</div>
+
+<!-- ✅ 올바른 방법: molecules 컴포넌트 사용 -->
+{% include "molecules/search_bar.html" with placeholder="검색..." %}
+```
+
+### Organisms 사용 규칙
+
+```html
+<!-- ❌ 잘못된 방법: 복잡한 레이아웃을 직접 작성 -->
+<nav class="navbar bg-base-100">
+  <div class="navbar-start">
+    <a class="btn btn-ghost text-xl">UmaSimCraft</a>
+  </div>
+  <div class="navbar-end">
+    <button class="btn btn-primary">로그인</button>
+  </div>
+</nav>
+
+<!-- ✅ 올바른 방법: organisms 컴포넌트 사용 -->
+{% include "organisms/navbar.html" %}
+```
+
+### 새로운 컴포넌트 생성 규칙
+
+#### 1. Atoms 생성
+
+```html
+<!-- components/templates/atoms/new_component.html -->
+{% comment %} New Component Atom Usage: {% include "atoms/new_component.html"
+with param1="value1" param2="value2" %} Parameters: - param1: 설명 - param2:
+설명 {% endcomment %}
+
+<div class="component-class {{ variant|default:'' }}">
+  {{ content|default:"Default content" }}
+</div>
+```
+
+#### 2. Molecules 생성
+
+```html
+<!-- components/templates/molecules/new_molecule.html -->
+{% comment %} New Molecule Component Usage: {% include
+"molecules/new_molecule.html" with param1="value1" %} Parameters: - param1: 설명
+{% endcomment %}
+
+<div class="molecule-container">
+  {% include "atoms/component1.html" with param1=param1 %} {% include
+  "atoms/component2.html" with param2=param2 %}
+</div>
+```
+
+### 컴포넌트 사용 우선순위
+
+1. **기존 atoms 사용** → `{% include "atoms/badge.html" %}`
+2. **기존 molecules 사용** → `{% include "molecules/search_bar.html" %}`
+3. **기존 organisms 사용** → `{% include "organisms/navbar.html" %}`
+4. **새로운 atoms 생성** → 재사용 가능한 최소 단위
+5. **새로운 molecules 생성** → atoms 조합
+6. **새로운 organisms 생성** → 복잡한 레이아웃
+
+### 컴포넌트 매개변수 규칙
+
+```html
+<!-- 일관된 매개변수 네이밍 -->
+{% include "atoms/badge.html" with text="SSR" # 표시할 텍스트
+variant="badge-primary" # 스타일 변형 size="badge-lg" # 크기 %} {% include
+"atoms/button.html" with label="클릭" # 버튼 텍스트 variant="btn-primary" #
+스타일 변형 size="btn-lg" # 크기 disabled=false # 비활성화 상태
+attrs="onclick='func()'" # 추가 속성 %}
+```
+
+## Tailwind CSS 사용법
+
+### 클래스 순서 규칙
+
+```html
+<!-- 올바른 순서: Layout → Spacing → Sizing → Typography → Visual → Interactive -->
+<div
+  class="
+  flex items-center justify-between
+  p-4 m-2
+  w-full h-12
+  text-lg font-semibold
+  bg-white rounded-lg shadow-md
+  hover:bg-gray-50 focus:ring-2
+"
+></div>
+```
+
+### 반응형 디자인
+
+```html
+<!-- 모바일 우선 설계 -->
+<div
+  class="
+  w-full md:w-1/2 lg:w-1/3
+  p-2 md:p-4 lg:p-6
+  text-sm md:text-base lg:text-lg
+"
+></div>
+```
+
+### 다크모드 지원
+
+```html
+<div
+  class="
+  bg-white dark:bg-gray-800
+  text-gray-900 dark:text-white
+  border-gray-200 dark:border-gray-700
+"
+></div>
+```
+
+## daisyUI 컴포넌트 활용
+
+### 카드 컴포넌트
+
+```html
+<div class="card w-96 bg-base-100 shadow-xl">
+  <figure class="px-10 pt-10">
+    <img src="character.jpg" alt="캐릭터" class="rounded-xl" />
+  </figure>
+  <div class="card-body">
+    <h2 class="card-title">캐릭터 이름</h2>
+    <p>캐릭터 설명...</p>
+    <div class="card-actions justify-end">
+      <button class="btn btn-primary">시뮬레이션</button>
+    </div>
+  </div>
+</div>
+```
+
+### 모달 컴포넌트
+
+```html
+<dialog id="simulation_modal" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">시뮬레이션 결과</h3>
+    <p class="py-4">결과 내용...</p>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn">닫기</button>
+      </form>
+    </div>
+  </div>
+</dialog>
+```
+
+### 프로그레스 바
+
+```html
+<div class="w-full">
+  <div class="flex justify-between mb-1">
+    <span class="text-sm font-medium">스피드</span>
+    <span class="text-sm font-medium">75%</span>
+  </div>
+  <div class="w-full bg-gray-200 rounded-full h-2.5">
+    <div class="bg-blue-600 h-2.5 rounded-full" style="width: 75%"></div>
+  </div>
+</div>
+```
+
+## Django 템플릿 패턴
+
+### Atomic Design 템플릿 구조
+
+```html
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}UmaSimCraft{% endblock %}</title>
+    {% load static %} {% load tailwind_tags %} {% tailwind_css %}
+    <link rel="manifest" href="{% static 'manifest.json' %}" />
+  </head>
+  <body class="min-h-screen bg-base-200">
+    <!-- Organisms: 네비게이션 -->
+    {% include "organisms/navbar.html" %}
+
+    <!-- 메인 콘텐츠 -->
+    <main class="container mx-auto px-4 py-8">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Organisms: 푸터 -->
+    {% include "organisms/footer.html" %}
+
+    <!-- JavaScript -->
+    <script src="{% static 'js/app.js' %}"></script>
+  </body>
+</html>
+```
+
+### 페이지 템플릿 (Atomic Design 적용)
+
+```html
+<!-- templates/pages/character_list.html -->
+{% extends "base.html" %} {% block title %}캐릭터 목록 - UmaSimCraft{% endblock
+%} {% block content %}
+<!-- Molecules: 검색바 -->
+{% include "molecules/search_bar.html" with placeholder="캐릭터 검색..." %}
+
+<!-- Atoms: 필터 버튼들 -->
+<div class="flex gap-2 mb-4">
+  {% include "atoms/button.html" with label="전체" variant="btn-outline" %} {%
+  include "atoms/button.html" with label="SSR" variant="btn-primary" %} {%
+  include "atoms/button.html" with label="SR" variant="btn-secondary" %}
+</div>
+
+<!-- 캐릭터 그리드 -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {% for character in characters %} {% include "molecules/character_card.html"
+  with character=character %} {% endfor %}
+</div>
+{% endblock %}
+```
+
+### 기본 레이아웃
+
+```html
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}UmaSimCraft{% endblock %}</title>
+    {% load static %} {% load tailwind_tags %} {% tailwind_css %}
+    <link rel="manifest" href="{% static 'manifest.json' %}" />
+  </head>
+  <body class="min-h-screen bg-base-200">
+    <!-- 네비게이션 -->
+    <div class="navbar bg-base-100 shadow-lg">
+      <div class="navbar-start">
+        <a href="{% url 'home' %}" class="btn btn-ghost text-xl">UmaSimCraft</a>
+      </div>
+      <div class="navbar-end">
+        <button class="btn btn-primary">시뮬레이션 시작</button>
+      </div>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="container mx-auto px-4 py-8">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="footer footer-center p-4 bg-base-300 text-base-content">
+      <div>
+        <p>Copyright © 2025 - All rights reserved by UmaSimCraft</p>
+      </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="{% static 'js/app.js' %}"></script>
+  </body>
+</html>
+```
+
+### Molecules 컴포넌트 템플릿
+
+```html
+<!-- components/templates/molecules/character_card.html -->
+{% comment %} Character Card Molecule Component Usage: {% include
+"molecules/character_card.html" with character=character %} Parameters: -
+character: Character model instance {% endcomment %}
+
+<div class="card w-80 bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+  <figure class="px-10 pt-10">
+    <img
+      src="{% static character.image_url %}"
+      alt="{{ character.name }}"
+      class="rounded-xl w-48 h-48 object-cover"
+    />
+  </figure>
+  <div class="card-body">
+    <h2 class="card-title">{{ character.name }}</h2>
+
+    <!-- Atoms: 배지 -->
+    {% include "atoms/badge.html" with text=character.rarity variant="badge-{{
+    character.rarity|lower }}" %}
+
+    <p class="text-sm text-gray-600">
+      {{ character.description|truncatewords:20 }}
+    </p>
+
+    <!-- Molecules: 스탯 카드 -->
+    {% include "molecules/stat_card.html" with title="스피드"
+    value=character.speed variant="text-primary" %} {% include
+    "molecules/stat_card.html" with title="스태미나" value=character.stamina
+    variant="text-secondary" %}
+
+    <div class="card-actions justify-end">
+      <!-- Atoms: 버튼 -->
+      {% include "atoms/button.html" with label="육성 시뮬레이션"
+      variant="btn-primary" attrs="onclick='startSimulation({{ character.id
+      }})'" %}
+    </div>
+  </div>
+</div>
+```
+
+## PWA 설정
+
+### Service Worker
+
+```javascript
+// static/js/sw.js
+const CACHE_NAME = "umasimcraft-v1";
+const urlsToCache = [
+  "/",
+  "/static/css/tailwind.css",
+  "/static/js/app.js",
+  "/static/img/logo.png",
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      if (response) {
+        return response;
+      }
+      return fetch(event.request);
+    })
+  );
+});
+```
+
+### Manifest 파일
+
+```json
+{
+  "name": "UmaSimCraft",
+  "short_name": "UmaSim",
+  "description": "우마무스메 육성 시뮬레이터",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/static/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+```
+
+## WebSocket 통신
+
+### JavaScript 클라이언트
+
+```javascript
+// static/js/websocket.js
+class SimulationWebSocket {
+  constructor(sessionId) {
+    this.sessionId = sessionId;
+    this.socket = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+  }
+
+  connect() {
+    this.socket = new WebSocket(
+      `ws://${window.location.host}/ws/simulation/${this.sessionId}/`
+    );
+
+    this.socket.onopen = () => {
+      console.log("WebSocket 연결됨");
+      this.reconnectAttempts = 0;
+    };
+
+    this.socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      this.handleMessage(data);
+    };
+
+    this.socket.onclose = () => {
+      console.log("WebSocket 연결 해제됨");
+      this.attemptReconnect();
+    };
+
+    this.socket.onerror = (error) => {
+      console.error("WebSocket 오류:", error);
+    };
+  }
+
+  handleMessage(data) {
+    switch (data.type) {
+      case "simulation_progress":
+        this.updateProgress(data.progress);
+        break;
+      case "simulation_complete":
+        this.showResults(data.results);
+        break;
+      case "error":
+        this.showError(data.message);
+        break;
+    }
+  }
+
+  updateProgress(progress) {
+    const progressBar = document.getElementById("simulation-progress");
+    if (progressBar) {
+      progressBar.style.width = `${progress}%`;
+      progressBar.textContent = `${progress}%`;
+    }
+  }
+
+  attemptReconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      setTimeout(() => {
+        console.log(
+          `재연결 시도 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`
+        );
+        this.connect();
+      }, 1000 * this.reconnectAttempts);
+    }
+  }
+
+  disconnect() {
+    if (this.socket) {
+      this.socket.close();
+    }
+  }
+}
+```
+
+## 성능 최적화
+
+### 이미지 최적화
+
+```html
+<!-- WebP 포맷 우선 사용 -->
+<picture>
+  <source srcset="image.webp" type="image/webp" />
+  <img src="image.jpg" alt="설명" loading="lazy" />
+</picture>
+```
+
+### CSS 최적화
+
+```css
+/* theme/static/css/custom.css */
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-lg;
+  }
+}
+```
+
+### JavaScript 모듈화
+
+```javascript
+// static/js/modules/simulation.js
+export class SimulationManager {
+    constructor() {
+        this.websocket = null;
+        this.currentSession = null;
+    }
+
+    startSimulation(config) {
+        // 시뮬레이션 시작 로직
+    }
+
+    stopSimulation() {
+        // 시뮬레이션 중지 로직
+    }
+}
+---
+description: "프론트엔드 개발 규칙 - Tailwind CSS, daisyUI, PWA"
+type: Auto Attached
+globs: ["theme/**", "templates/**", "static/**", "**/*.html", "**/*.css", "**/*.js"]
+autoApply: true
+---
+```

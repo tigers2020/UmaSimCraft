@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}WebSocket 테스트 - UmaSimCraft{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-8">WebSocket 테스트</h1>
+    
+    <div class="grid md:grid-cols-2 gap-8">
+        <!-- 연결 상태 -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-4">연결 상태</h2>
+            <div class="flex items-center">
+                <div id="connection-status" class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                <span id="status-text">연결되지 않음</span>
+            </div>
+            <button id="connect-btn" class="btn-primary mt-4">
+                연결
+            </button>
+        </div>
+        
+        <!-- 메시지 전송 -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-4">메시지 전송</h2>
+            <input type="text" id="message-input" placeholder="메시지를 입력하세요" class="w-full p-2 border border-gray-300 rounded mb-2">
+            <button id="send-btn" class="btn-secondary" disabled>
+                전송
+            </button>
+        </div>
+    </div>
+    
+    <!-- 메시지 로그 -->
+    <div class="mt-8">
+        <h2 class="text-2xl font-bold mb-4">메시지 로그</h2>
+        <div class="card">
+            <div id="message-log" class="h-64 overflow-y-auto text-sm">
+                <p class="text-gray-600">메시지가 여기에 표시됩니다.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let socket = null;
+let isConnected = false;
+
+function updateConnectionStatus(connected) {
+    const statusElement = document.getElementById('connection-status');
+    const statusText = document.getElementById('status-text');
+    const connectBtn = document.getElementById('connect-btn');
+    const sendBtn = document.getElementById('send-btn');
+    
+    if (connected) {
+        statusElement.className = 'w-3 h-3 bg-uma-green rounded-full mr-3';
+        statusText.textContent = '연결됨';
+        connectBtn.textContent = '연결 해제';
+        sendBtn.disabled = false;
+    } else {
+        statusElement.className = 'w-3 h-3 bg-red-500 rounded-full mr-3';
+        statusText.textContent = '연결되지 않음';
+        connectBtn.textContent = '연결';
+        sendBtn.disabled = true;
+    }
+}
+
+function addMessage(message, type = 'info') {
+    const logElement = document.getElementById('message-log');
+    const timestamp = new Date().toLocaleTimeString();
+    const messageElement = document.createElement('div');
+    messageElement.className = `mb-2 p-2 rounded ${type === 'error' ? 'bg-red-100' : 'bg-gray-100'}`;
+    messageElement.textContent = `[${timestamp}] ${message}`;
+    logElement.appendChild(messageElement);
+    logElement.scrollTop = logElement.scrollHeight;
+}
+
+document.getElementById('connect-btn').addEventListener('click', function() {
+    if (!isConnected) {
+        // WebSocket 연결 시뮬레이션
+        isConnected = true;
+        updateConnectionStatus(true);
+        addMessage('WebSocket 연결됨', 'success');
+    } else {
+        // WebSocket 연결 해제 시뮬레이션
+        isConnected = false;
+        updateConnectionStatus(false);
+        addMessage('WebSocket 연결 해제됨', 'info');
+    }
+});
+
+document.getElementById('send-btn').addEventListener('click', function() {
+    const input = document.getElementById('message-input');
+    const message = input.value.trim();
+    
+    if (message && isConnected) {
+        addMessage(`전송: ${message}`, 'info');
+        input.value = '';
+        
+        // 서버 응답 시뮬레이션
+        setTimeout(() => {
+            addMessage(`서버 응답: ${message}`, 'success');
+        }, 1000);
+    }
+});
+
+document.getElementById('message-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('send-btn').click();
+    }
+});
+</script>
+{% endblock %} 

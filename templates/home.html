@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}UmaSimCraft - 우마무스메 육성 시뮬레이터{% endblock %}
+
+{% block content %}
+<div class="text-center">
+    <!-- Hero Section -->
+    <div class="py-12">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">
+            UmaSimCraft
+        </h1>
+        <p class="text-xl text-gray-600 mb-8">
+            우마무스메 육성 시뮬레이터
+        </p>
+        <p class="text-lg text-gray-500 max-w-2xl mx-auto mb-8">
+            오프라인 환경에서 우마무스메 육성 시뮬레이션을 경험하고 최적화된 육성 전략을 찾아보세요.
+        </p>
+        
+        <div class="flex justify-center space-x-4">
+            <a href="{% url 'simulation:index' %}" class="btn-primary">
+                시뮬레이션 시작
+            </a>
+            <a href="{% url 'restapi:index' %}" class="btn-secondary">
+                API 문서
+            </a>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="grid md:grid-cols-3 gap-8 mt-16">
+        <div class="card">
+            <div class="text-uma-blue text-4xl mb-4">🏇</div>
+            <h3 class="text-xl font-semibold mb-2">실시간 시뮬레이션</h3>
+            <p class="text-gray-600">
+                실시간으로 육성 과정을 시뮬레이션하고 결과를 확인할 수 있습니다.
+            </p>
+        </div>
+        
+        <div class="card">
+            <div class="text-uma-green text-4xl mb-4">📊</div>
+            <h3 class="text-xl font-semibold mb-2">데이터 분석</h3>
+            <p class="text-gray-600">
+                육성 결과를 분석하고 최적화된 전략을 제안받을 수 있습니다.
+            </p>
+        </div>
+        
+        <div class="card">
+            <div class="text-uma-yellow text-4xl mb-4">🔧</div>
+            <h3 class="text-xl font-semibold mb-2">오프라인 지원</h3>
+            <p class="text-gray-600">
+                PWA를 통해 오프라인에서도 완전한 기능을 사용할 수 있습니다.
+            </p>
+        </div>
+    </div>
+
+    <!-- Status Section -->
+    <div class="mt-16 p-6 bg-white rounded-lg shadow">
+        <h2 class="text-2xl font-bold mb-4">시스템 상태</h2>
+        <div class="grid md:grid-cols-2 gap-4 text-left">
+            <div class="flex items-center">
+                <div class="w-3 h-3 bg-uma-green rounded-full mr-3"></div>
+                <span>Django 서버: 정상</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-3 h-3 bg-uma-green rounded-full mr-3"></div>
+                <span>데이터베이스: 연결됨</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-3 h-3 bg-uma-green rounded-full mr-3"></div>
+                <span>Redis 캐시: 정상</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-3 h-3 bg-uma-green rounded-full mr-3"></div>
+                <span>WebSocket: 준비됨</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

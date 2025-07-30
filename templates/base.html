@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}UmaSimCraft - 우마무스메 육성 시뮬레이터{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Noto Sans KR', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        'uma-blue': '#3B82F6',
+                        'uma-green': '#10B981',
+                        'uma-yellow': '#F59E0B',
+                        'uma-red': '#EF4444',
+                    },
+                },
+            },
+        }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{% url 'home' %}" class="flex-shrink-0 flex items-center">
+                        <span class="text-2xl font-bold text-uma-blue">UmaSimCraft</span>
+                    </a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'simulation:index' %}" class="text-gray-700 hover:text-uma-blue px-3 py-2 rounded-md text-sm font-medium">
+                        시뮬레이션
+                    </a>
+                    <a href="{% url 'restapi:index' %}" class="text-gray-700 hover:text-uma-blue px-3 py-2 rounded-md text-sm font-medium">
+                        API
+                    </a>
+                    <a href="#" class="text-gray-700 hover:text-uma-blue px-3 py-2 rounded-md text-sm font-medium">
+                        도움말
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div class="text-center text-gray-500 text-sm">
+                <p>&copy; 2024 UmaSimCraft. 우마무스메 육성 시뮬레이터</p>
+            </div>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

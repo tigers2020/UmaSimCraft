@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}API 문서 - UmaSimCraft{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-8">UmaSimCraft API 문서</h1>
+    
+    <div class="space-y-8">
+        <!-- 캐릭터 API -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-4">캐릭터 API</h2>
+            <div class="bg-gray-100 p-4 rounded">
+                <p class="font-mono text-sm">GET /api/characters/</p>
+            </div>
+            <p class="mt-2 text-gray-600">모든 캐릭터 정보를 조회합니다.</p>
+        </div>
+        
+        <!-- 서포트 카드 API -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-4">서포트 카드 API</h2>
+            <div class="bg-gray-100 p-4 rounded">
+                <p class="font-mono text-sm">GET /api/support-cards/</p>
+            </div>
+            <p class="mt-2 text-gray-600">모든 서포트 카드 정보를 조회합니다.</p>
+        </div>
+        
+        <!-- 스킬 API -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-4">스킬 API</h2>
+            <div class="bg-gray-100 p-4 rounded">
+                <p class="font-mono text-sm">GET /api/skills/</p>
+            </div>
+            <p class="mt-2 text-gray-600">모든 스킬 정보를 조회합니다.</p>
+        </div>
+    </div>
+    
+    <!-- API 테스트 버튼 -->
+    <div class="text-center mt-8">
+        <button class="btn-secondary" onclick="testAPI()">
+            API 테스트
+        </button>
+    </div>
+    
+    <!-- API 응답 결과 -->
+    <div class="mt-8">
+        <h2 class="text-2xl font-bold mb-4">API 응답 결과</h2>
+        <div class="card">
+            <pre id="api-result" class="text-sm text-gray-600">API 테스트 버튼을 클릭하면 결과가 여기에 표시됩니다.</pre>
+        </div>
+    </div>
+</div>
+
+<script>
+function testAPI() {
+    fetch('/api/characters/')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('api-result').textContent = JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+            document.getElementById('api-result').textContent = 'API 호출 중 오류가 발생했습니다: ' + error;
+        });
+}
+</script>
+{% endblock %} 

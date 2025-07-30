@@ -1,0 +1,247 @@
+# Django 5.2 코딩 규칙
+
+## 템플릿 개발 규칙
+
+### Atomic Design 필수 적용
+
+- **📋 상세 규칙**: `atomic-design.mdc` 파일 참조
+- 모든 템플릿은 components 앱의 atoms/molecules/organisms 사용
+- 직접 HTML 작성 금지, 반드시 include 사용
+
+### 템플릿 구조 예시
+
+```html
+<!-- 올바른 방법 -->
+{% include "atoms/badge.html" with text="SSR" variant="badge-primary" %} {%
+include "molecules/search_bar.html" with placeholder="검색..." %} {% include
+"organisms/navbar.html" %}
+
+<!-- 잘못된 방법 -->
+<div class="badge badge-primary">SSR</div>
+```
+
+## Django 앱 구조
+
+- **앱 분리**: 기능별로 독립적인 앱으로 분리
+- **apps/ 디렉토리**: 모든 Django 앱을 apps/ 하위에 배치
+- **설정 분리**: settings/ 디렉토리로 환경별 설정 분리
+
+## 모델 설계
+
+```python
+# models.py 예시
+from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
+
+class Character(models.Model):
+    """우마무스메 캐릭터 모델"""
+    id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=100, unique=True)
+    rarity = models.CharField(max_length=20, choices=RARITY_CHOICES)
+
+    class Meta:
+        db_table = 'character_data'
+        verbose_name = '캐릭터'
+        verbose_name_plural = '캐릭터들'
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.rarity})"
+```
+
+## Composite Primary Key 활용 (Django 5.2)
+
+```python
+class SupportCard(models.Model):
+    """서포트 카드 모델 - Composite PK 사용"""
+    card_id = models.IntegerField()
+    rarity = models.CharField(max_length=10)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['card_id', 'rarity'],
+                name='unique_card_rarity'
+            )
+        ]
+        primary_key = models.UniqueConstraint(
+            fields=['card_id', 'rarity'],
+            name='pk_card_rarity'
+        )
+```
+
+## ViewSet 패턴 (DRF)
+
+```python
+# views.py 예시
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.core.cache import cache
+
+class CharacterViewSet(viewsets.ReadOnlyModelViewSet):
+    """캐릭터 API ViewSet"""
+    queryset = Character.objects.all()
+    serializer_class = CharacterSerializer
+
+    @action(detail=True, methods=['post'])
+    def simulate(self, request, pk=None):
+        """캐릭터 육성 시뮬레이션"""
+        character = self.get_object()
+        # 시뮬레이션 로직
+        return Response({'result': 'success'})
+```
+
+## Channels Consumer 패턴
+
+```python
+# consumers.py 예시
+import json
+from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+
+class SimulationConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        """WebSocket 연결"""
+        self.session_id = self.scope['url_route']['kwargs']['session_id']
+        self.room_group_name = f'simulation_{self.session_id}'
+
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        """WebSocket 연결 해제"""
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+
+    async def receive(self, text_data):
+        """메시지 수신"""
+        data = json.loads(text_data)
+        # 처리 로직
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'simulation_update',
+                'data': data
+            }
+        )
+```
+
+## URL 패턴
+
+```python
+# urls.py 예시
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from apps.api.views import CharacterViewSet
+
+router = DefaultRouter()
+router.register(r'characters', CharacterViewSet)
+
+urlpatterns = [
+    path('api/', include(router.urls)),
+    path('ws/', include('apps.realtime.urls')),
+]
+```
+
+## 설정 파일 구조
+
+```python
+# settings/base.py
+from pathlib import Path
+from decouple import config
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# 보안 설정
+SECRET_KEY = config('SECRET_KEY')
+DEBUG = config('DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost').split(',')
+
+# 데이터베이스
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT'),
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
+    }
+}
+
+# Channels 설정
+ASGI_APPLICATION = 'project.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('redis', 6379)],
+        },
+    },
+}
+
+# 캐시 설정
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://redis:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+```
+
+## 마이그레이션 규칙
+
+- **마이그레이션 파일**: 자동 생성 후 검토
+- **데이터 마이그레이션**: 복잡한 데이터 변경 시 별도 마이그레이션
+- **롤백 계획**: 마이그레이션 실패 시 롤백 방법 준비
+
+## 테스트 패턴
+
+```python
+# tests.py 예시
+from django.test import TestCase
+from django.urls import reverse
+from rest_framework.test import APITestCase
+from channels.testing import WebsocketCommunicator
+
+class CharacterAPITest(APITestCase):
+    def setUp(self):
+        self.character = Character.objects.create(
+            name="테스트 캐릭터",
+            rarity="SSR"
+        )
+
+    def test_character_list(self):
+        """캐릭터 목록 API 테스트"""
+        url = reverse('character-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+```
+
+## 성능 최적화
+
+- **select_related()**: ForeignKey 관계 최적화
+- **prefetch_related()**: ManyToMany 관계 최적화
+- **only()/defer()**: 필요한 필드만 조회
+- **bulk_create()**: 대량 데이터 삽입 시 사용
+
+---
+
+description: "Django 5.2 특화 코딩 규칙 및 모범 사례"
+type: Auto Attached
+globs: ["apps/**", "project/**", "**/models.py", "**/views.py", "**/urls.py"]
+autoApply: true
+
+---

@@ -1,0 +1,300 @@
+# Atomic Design 규칙 (필수 준수)
+
+## 개요
+
+모든 HTML 템플릿은 Atomic Design 패턴을 따라야 합니다. 이는 컴포넌트의 재사용성, 일관성, 유지보수성을 보장합니다.
+
+## 템플릿 관리 구조
+
+### 템플릿 위치 규칙
+
+**모든 템플릿은 `components` 앱에서 관리합니다.**
+
+- **기본 템플릿**: `components/templates/`
+- **페이지 템플릿**: `components/templates/pages/`
+- **Atomic Design 컴포넌트**: `components/templates/atoms/`, `components/templates/molecules/`, `components/templates/organisms/`
+- **기능별 템플릿**: `components/templates/cards/`, `components/templates/simulator/` 등
+
+### Django 설정
+
+```python
+# settings.py
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],  # 프로젝트 레벨 templates 디렉토리 사용하지 않음
+        "APP_DIRS": True,  # 앱의 templates 디렉토리 자동 검색
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
+]
+```
+
+### 템플릿 참조 규칙
+
+**❌ 금지사항**:
+
+```html
+<!-- 절대 경로 사용 금지 -->
+{% include "/templates/components/navbar.html" %}
+```
+
+**✅ 올바른 사용법**:
+
+```html
+<!-- 상대 경로 사용 (components 앱 기준) -->
+{% include "organisms/navbar.html" %} {% include "atoms/button.html" with
+label="클릭" %} {% include "molecules/search_bar.html" %}
+```
+
+## 컴포넌트 계층 구조
+
+### 1. Atoms (원자)
+
+가장 기본적인 UI 요소로, 더 이상 분해할 수 없는 최소 단위입니다.
+
+**위치**: `components/templates/atoms/`
+
+**예시**:
+
+- `badge.html` - 배지, 태그
+- `button.html` - 버튼
+- `input.html` - 입력 필드
+- `icon.html` - 아이콘
+- `loader.html` - 로딩 스피너
+
+### 2. Molecules (분자)
+
+Atoms를 조합하여 특정 기능을 수행하는 컴포넌트입니다.
+
+**위치**: `components/templates/molecules/`
+
+**예시**:
+
+- `search_bar.html` - 검색바 (input + button)
+- `stat_card.html` - 통계 카드 (title + value + icon)
+- `form_field.html` - 폼 필드 (label + input + validation)
+
+### 3. Organisms (유기체)
+
+Molecules와 Atoms를 조합하여 복잡한 레이아웃을 구성합니다.
+
+**위치**: `components/templates/organisms/`
+
+**예시**:
+
+- `navbar.html` - 네비게이션 바
+- `footer.html` - 푸터
+- `sidebar.html` - 사이드바
+
+## 사용 규칙
+
+### ❌ 금지사항
+
+```html
+<!-- 직접 HTML 작성 금지 -->
+<div class="badge badge-primary">SSR</div>
+<button class="btn btn-primary">클릭</button>
+<input class="input input-bordered" placeholder="검색..." />
+```
+
+### ✅ 올바른 사용법
+
+```html
+<!-- Atoms 사용 -->
+{% include "atoms/badge.html" with text="SSR" variant="badge-primary" %} {%
+include "atoms/button.html" with label="클릭" variant="btn-primary" %} {%
+include "atoms/input.html" with placeholder="검색..." %}
+
+<!-- Molecules 사용 -->
+{% include "molecules/search_bar.html" with placeholder="검색..." %}
+
+<!-- Organisms 사용 -->
+{% include "organisms/navbar.html" %}
+```
+
+## 컴포넌트 생성 규칙
+
+### Atoms 생성 템플릿
+
+```html
+<!-- components/templates/atoms/new_atom.html -->
+{% comment %} New Atom Component Usage: {% include "atoms/new_atom.html" with
+param1="value1" param2="value2" %} Parameters: - param1: 설명 - param2: 설명 {%
+endcomment %}
+
+<div class="atom-class {{ variant|default:'' }} {{ size|default:'' }}">
+  {{ content|default:"Default content" }}
+</div>
+```
+
+### Molecules 생성 템플릿
+
+```html
+<!-- components/templates/molecules/new_molecule.html -->
+{% comment %} New Molecule Component Usage: {% include
+"molecules/new_molecule.html" with param1="value1" %} Parameters: - param1: 설명
+{% endcomment %}
+
+<div class="molecule-container">
+  {% include "atoms/component1.html" with param1=param1 %} {% include
+  "atoms/component2.html" with param2=param2 %}
+</div>
+```
+
+### Organisms 생성 템플릿
+
+```html
+<!-- components/templates/organisms/new_organism.html -->
+{% comment %} New Organism Component Usage: {% include
+"organisms/new_organism.html" with param1="value1" %} Parameters: - param1: 설명
+{% endcomment %}
+
+<div class="organism-container">
+  {% include "molecules/molecule1.html" with param1=param1 %} {% include
+  "molecules/molecule2.html" with param2=param2 %} {% include "atoms/atom1.html"
+  with param3=param3 %}
+</div>
+```
+
+## 매개변수 네이밍 규칙
+
+### 일관된 매개변수 사용
+
+```html
+<!-- Atoms 공통 매개변수 -->
+{% include "atoms/badge.html" with text="SSR" # 표시할 텍스트
+variant="badge-primary" # 스타일 변형 size="badge-lg" # 크기 %} {% include
+"atoms/button.html" with label="클릭" # 버튼 텍스트 variant="btn-primary" #
+스타일 변형 size="btn-lg" # 크기 disabled=false # 비활성화 상태
+attrs="onclick='func()'" # 추가 속성 %} {% include "atoms/input.html" with
+type="text" # 입력 타입 name="search" # 필드 이름 placeholder="검색..." #
+플레이스홀더 value=search_value # 초기값 attrs="class='input-bordered'" # 추가
+속성 %}
+```
+
+## 컴포넌트 사용 우선순위
+
+1. **기존 Atoms 사용** → `{% include "atoms/badge.html" %}`
+2. **기존 Molecules 사용** → `{% include "molecules/search_bar.html" %}`
+3. **기존 Organisms 사용** → `{% include "organisms/navbar.html" %}`
+4. **새로운 Atoms 생성** → 재사용 가능한 최소 단위
+5. **새로운 Molecules 생성** → atoms 조합
+6. **새로운 Organisms 생성** → 복잡한 레이아웃
+
+## 검증 체크리스트
+
+### Atoms 검증
+
+- [ ] 단일 책임 원칙을 따르는가?
+- [ ] 재사용 가능한가?
+- [ ] 매개변수가 명확한가?
+- [ ] 문서화가 되어 있는가?
+
+### Molecules 검증
+
+- [ ] Atoms만을 조합하여 구성되었는가?
+- [ ] 특정 기능을 수행하는가?
+- [ ] 독립적으로 사용 가능한가?
+- [ ] 매개변수가 적절한가?
+
+### Organisms 검증
+
+- [ ] Molecules와 Atoms를 조합하여 구성되었는가?
+- [ ] 복잡한 레이아웃을 제공하는가?
+- [ ] 페이지의 특정 섹션을 담당하는가?
+- [ ] 재사용 가능한가?
+
+## 예시: 카드 시스템
+
+### Atoms
+
+```html
+<!-- atoms/badge.html -->
+<span class="badge {{ variant|default:'badge-primary' }} {{ size|default:'' }}">
+  {{ text|default:"Badge" }}
+</span>
+
+<!-- atoms/button.html -->
+<button
+  class="btn {{ variant|default:'btn-primary' }} {{ size|default:'btn' }}"
+  {{
+  attrs|safe
+  }}
+>
+  {{ label|default:"Button" }}
+</button>
+```
+
+### Molecules
+
+```html
+<!-- molecules/card_header.html -->
+<div class="card-header">
+  <h3 class="card-title">{{ title }}</h3>
+  {% include "atoms/badge.html" with text=badge_text variant=badge_variant %}
+</div>
+
+<!-- molecules/card_actions.html -->
+<div class="card-actions">
+  {% include "atoms/button.html" with label=primary_label variant="btn-primary"
+  %} {% include "atoms/button.html" with label=secondary_label
+  variant="btn-outline" %}
+</div>
+```
+
+### Organisms
+
+```html
+<!-- organisms/character_card.html -->
+<div class="card bg-base-100 shadow-xl">
+  {% include "molecules/card_header.html" with title=character.name
+  badge_text=character.rarity %}
+  <div class="card-body">
+    <p>{{ character.description }}</p>
+    {% include "molecules/stat_grid.html" with stats=character.stats %}
+  </div>
+  {% include "molecules/card_actions.html" with primary_label="시뮬레이션"
+  secondary_label="상세보기" %}
+</div>
+```
+
+## 마이그레이션 가이드
+
+### 기존 코드를 Atomic Design으로 변환
+
+**변환 전**:
+
+```html
+<div class="card">
+  <h3>캐릭터 이름</h3>
+  <div class="badge badge-primary">SSR</div>
+  <button class="btn btn-primary">시뮬레이션</button>
+</div>
+```
+
+**변환 후**:
+
+```html
+<div class="card">
+  {% include "molecules/card_header.html" with title="캐릭터 이름"
+  badge_text="SSR" %} {% include "molecules/card_actions.html" with
+  primary_label="시뮬레이션" %}
+</div>
+--- 이 규칙을 엄격히 준수하여 일관되고 유지보수 가능한 컴포넌트 시스템을
+구축하세요. description: globs: alwaysApply: false ---
+```
+
+---
+
+description: "프론트엔드 개발 규칙 - Tailwind CSS, daisyUI, PWA"
+type: Auto Attached
+globs: ["theme/**", "templates/**", "static/**", "**/*.html", "**/*.css", "**/*.js"]
+autoApply: true
+
+---
